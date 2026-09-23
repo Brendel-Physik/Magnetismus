@@ -1,0 +1,687 @@
+<title>Geheimnis Magnet Quiz</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,700&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Caveat:wght@600;700&display=swap">
+<style>
+  :root{
+    --paper:#F3F6F8; --grid:rgba(45,95,150,.09);
+    --surface:#FFFFFF; --surface-2:#F2F5F9;
+    --ink:#172033; --ink-soft:#56627A; --line:#D5DDE7;
+    --pen:#2340B0; --pen-soft:#E7ECFC; --on-pen:#FFFFFF;
+    --north:#D2362F; --south:#23855A; --steel:#8A94A2;
+    --ruler:#F2E6B8; --ruler-line:#8C7A3E;
+    --ok:#1C7A4C; --ok-bg:#E2F3E9; --bad:#BD3029; --bad-bg:#FBE8E6; --part:#935F00; --part-bg:#FCF1DA;
+    --shadow:0 1px 2px rgba(23,32,51,.06), 0 10px 30px rgba(23,32,51,.07);
+    --f-display:"Bricolage Grotesque","Segoe UI",system-ui,sans-serif;
+    --f-body:"Atkinson Hyperlegible","Segoe UI",system-ui,sans-serif;
+    --f-hand:"Caveat","Segoe Print","Comic Sans MS",cursive;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      color-scheme:dark;
+      --paper:#0F131A; --grid:rgba(130,160,210,.07);
+      --surface:#181E28; --surface-2:#1F2633;
+      --ink:#E6EAF2; --ink-soft:#9DA8BB; --line:#2E3747;
+      --pen:#8EA4FF; --pen-soft:#222C4B; --on-pen:#0D1220;
+      --north:#E0514A; --south:#35A874; --steel:#7F8999;
+      --ruler:#3A3422; --ruler-line:#C4B173;
+      --ok:#62CC95; --ok-bg:#15301F; --bad:#FF8077; --bad-bg:#3A1917; --part:#F0B44C; --part-bg:#352813;
+      --shadow:0 1px 2px rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="dark"]{
+    color-scheme:dark;
+    --paper:#0F131A; --grid:rgba(130,160,210,.07);
+    --surface:#181E28; --surface-2:#1F2633;
+    --ink:#E6EAF2; --ink-soft:#9DA8BB; --line:#2E3747;
+    --pen:#8EA4FF; --pen-soft:#222C4B; --on-pen:#0D1220;
+    --north:#E0514A; --south:#35A874; --steel:#7F8999;
+    --ruler:#3A3422; --ruler-line:#C4B173;
+    --ok:#62CC95; --ok-bg:#15301F; --bad:#FF8077; --bad-bg:#3A1917; --part:#F0B44C; --part-bg:#352813;
+    --shadow:0 1px 2px rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.35);
+  }
+
+  *{ box-sizing:border-box; }
+  body{
+    background-color:var(--paper);
+    background-image:
+      linear-gradient(var(--grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size:20px 20px;
+    color:var(--ink);
+    font-family:var(--f-body);
+    font-size:17px;
+    line-height:1.5;
+  }
+  :focus-visible{ outline:3px solid var(--pen); outline-offset:2px; }
+
+  .wrap{ max-width:720px; margin:0 auto; padding-inline:16px; padding-block:24px 40px; display:flex; flex-direction:column; gap:18px; }
+
+  /* Kopf */
+  .top{ display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; }
+  .brand{ display:flex; align-items:center; gap:12px; }
+  .brand svg{ width:44px; height:44px; flex:none; }
+  .brand h1{ font-family:var(--f-display); font-weight:800; font-size:clamp(1.55rem, 4.4vw, 2.05rem); line-height:1.05; letter-spacing:-.015em; margin:0; }
+  .brand p{ margin:2px 0 0; color:var(--ink-soft); font-size:.9rem; }
+  .score{ display:flex; align-items:baseline; gap:6px; font-variant-numeric:tabular-nums; }
+  .score b{ font-family:var(--f-display); font-weight:800; font-size:1.7rem; color:var(--pen); line-height:1; }
+  .score span{ color:var(--ink-soft); font-size:.9rem; }
+
+  .track{ display:grid; grid-template-columns:repeat(5, minmax(0,1fr)); gap:6px; }
+  .stop{ display:flex; flex-direction:column; gap:5px; min-width:0; }
+  .stop-bar{ display:block; height:8px; border-radius:4px; background:var(--surface-2); border:1px solid var(--line); overflow:hidden; }
+  .stop-bar i{ display:block; height:100%; background:var(--pen); transition:width .3s ease; }
+  .stop-lbl{ font-size:.72rem; font-weight:700; letter-spacing:.07em; text-transform:uppercase; color:var(--ink-soft); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .stop-lbl .sm{ display:none; }
+  .stop.cur .stop-lbl{ color:var(--pen); }
+  .stop.cur .stop-bar{ border-color:var(--pen); }
+  .stop.off{ opacity:.35; }
+
+  /* Blatt */
+  .sheet{ background:var(--surface); border:1px solid var(--line); border-radius:16px; box-shadow:var(--shadow); padding:clamp(18px, 4.5vw, 34px); display:flex; flex-direction:column; gap:20px; }
+  .eyebrow{ display:flex; justify-content:space-between; gap:6px 14px; flex-wrap:wrap; font-size:.76rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-soft); font-variant-numeric:tabular-nums; }
+  .eyebrow .st{ color:var(--pen); }
+  .art{ display:block; width:100%; max-width:340px; height:auto; }
+  .qhead{ display:flex; flex-direction:column; gap:6px; }
+  .prompt{ margin:0; font-weight:700; font-size:clamp(1.15rem, 2.9vw, 1.36rem); line-height:1.35; text-wrap:balance; max-width:60ch; }
+  .sub{ margin:0; color:var(--ink-soft); font-size:.95rem; max-width:62ch; }
+
+  /* Artwork */
+  .m-n{ fill:var(--north); } .m-s{ fill:var(--south); }
+  .m-t{ fill:#fff; font:800 13px var(--f-display); text-anchor:middle; dominant-baseline:central; }
+  .steel{ fill:var(--steel); }
+  .clip{ fill:none; stroke:var(--steel); stroke-width:2.4; stroke-linecap:round; stroke-linejoin:round; }
+  .arr line{ stroke:var(--ink-soft); stroke-width:2; }
+  .arr path{ fill:var(--ink-soft); }
+  .arr.dashed line{ stroke:var(--pen); stroke-dasharray:5 4; }
+  .arr.dashed path{ fill:var(--pen); }
+  .dim line{ stroke:var(--pen); stroke-width:1.5; }
+  .dim text{ fill:var(--pen); font:italic 700 15px var(--f-body); text-anchor:middle; }
+  .ruler rect{ fill:var(--ruler); stroke:var(--ruler-line); stroke-width:1; }
+  .ruler line{ stroke:var(--ruler-line); stroke-width:1; }
+  .ruler text{ fill:var(--ruler-line); font:700 8.5px var(--f-body); text-anchor:middle; }
+  .straw{ fill:var(--surface); stroke:var(--steel); stroke-width:2; }
+  .hand{ fill:var(--pen); font:700 22px var(--f-hand); text-anchor:middle; }
+  .cap{ fill:var(--ink-soft); font:700 10px var(--f-body); text-anchor:middle; letter-spacing:.04em; }
+
+  /* Multiple Choice */
+  .opts{ display:flex; flex-direction:column; gap:10px; }
+  .opt{ display:grid; grid-template-columns:30px minmax(0,1fr) 22px; align-items:center; gap:12px; width:100%; text-align:left; padding:12px 14px; border:1.5px solid var(--line); border-radius:12px; background:var(--surface); color:var(--ink); font:inherit; line-height:1.4; cursor:pointer; transition:border-color .15s, background-color .15s; }
+  .opt:hover:not(:disabled){ border-color:var(--pen); }
+  .opt[aria-pressed="true"]{ border-color:var(--pen); background:var(--pen-soft); }
+  .opt-key{ width:30px; height:30px; border-radius:8px; display:grid; place-items:center; font-weight:700; font-size:.85rem; background:var(--surface-2); color:var(--ink-soft); border:1px solid var(--line); }
+  .opt[aria-pressed="true"] .opt-key{ background:var(--pen); color:var(--on-pen); border-color:var(--pen); }
+  .opt-ico{ font-weight:700; font-size:1.1rem; text-align:center; }
+  .opt.is-ok{ border-color:var(--ok); background:var(--ok-bg); }
+  .opt.is-ok .opt-key{ background:var(--ok); color:var(--surface); border-color:var(--ok); }
+  .opt.is-ok .opt-ico{ color:var(--ok); }
+  .opt.is-bad{ border-color:var(--bad); background:var(--bad-bg); }
+  .opt.is-bad .opt-key{ background:var(--bad); color:var(--surface); border-color:var(--bad); }
+  .opt.is-bad .opt-ico{ color:var(--bad); }
+  .opt.is-miss{ border-color:var(--ok); border-style:dashed; }
+  .opt.is-miss .opt-ico{ color:var(--ok); }
+  .opt.is-dim{ opacity:.5; }
+  .opts.multi .opt-key{ border-radius:6px; border:1.5px solid var(--ink-soft); background:var(--surface); font-size:1.05rem; }
+  .opts.multi .opt[aria-pressed="true"] .opt-key{ background:var(--pen); color:var(--on-pen); border-color:var(--pen); }
+  .opts.multi .opt.is-ok .opt-key{ background:var(--ok); color:var(--surface); border-color:var(--ok); }
+  .opts.multi .opt.is-bad .opt-key{ background:var(--bad); color:var(--surface); border-color:var(--bad); }
+  .opt:disabled{ cursor:default; }
+
+  .seq{ display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:8px; }
+  .seq b{ display:block; text-align:center; padding:2px 0; border-radius:6px; background:var(--surface-2); font-family:var(--f-hand); font-size:1.6rem; line-height:1.2; color:var(--pen); }
+  .opt.is-ok .seq b, .opt.is-bad .seq b{ background:var(--surface); }
+  .seq-legend{ display:grid; grid-template-columns:30px minmax(0,1fr) 22px; gap:12px; padding-inline:15.5px; }
+  .seq-legend > div{ display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:8px; }
+  .seq-legend span{ text-align:center; font-size:.72rem; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--ink-soft); line-height:1.25; }
+
+  /* Ankreuz-Tabelle */
+  .mx-wrap, .tbl-wrap{ overflow-x:auto; }
+  .mx{ width:100%; border-collapse:collapse; }
+  .mx th, .mx td{ padding:7px 6px; border-bottom:1px solid var(--line); }
+  .mx thead th{ font-size:.74rem; font-weight:700; letter-spacing:.07em; text-transform:uppercase; color:var(--ink-soft); text-align:center; vertical-align:bottom; }
+  .mx thead th:first-child{ text-align:left; }
+  .mx tbody th{ text-align:left; font-weight:400; }
+  .mx td{ text-align:center; width:88px; }
+  .mx td.res, .mx th.res{ width:26px; padding-inline:0; font-weight:700; font-size:1.1rem; }
+  .box{ width:42px; height:42px; padding:0; border:1.5px solid var(--ink-soft); border-radius:6px; background:var(--surface); display:inline-grid; place-items:center; font-family:var(--f-hand); font-weight:700; font-size:2.1rem; line-height:1; color:var(--pen); cursor:pointer; transition:background-color .15s, border-color .15s; }
+  .box:hover:not(:disabled){ border-color:var(--pen); background:var(--pen-soft); }
+  .box:disabled{ cursor:default; }
+  .mx tr.is-ok .box.sel{ color:var(--ok); border-color:var(--ok); }
+  .mx tr.is-bad .box.sel{ color:var(--bad); border-color:var(--bad); }
+  .box.should{ border-color:var(--ok); border-style:dashed; background:var(--ok-bg); }
+  .mx tr.is-ok td.res{ color:var(--ok); }
+  .mx tr.is-bad td.res{ color:var(--bad); }
+
+  /* Zahleneingabe */
+  .data{ border-collapse:collapse; min-width:260px; }
+  .data th, .data td{ border:1px solid var(--line); padding:6px 14px; text-align:left; }
+  .data th{ font-size:.74rem; font-weight:700; letter-spacing:.07em; text-transform:uppercase; color:var(--ink-soft); background:var(--surface-2); }
+  .data td.val{ text-align:center; font-family:var(--f-hand); font-size:1.5rem; line-height:1.1; color:var(--pen); font-variant-numeric:tabular-nums; }
+  .num-row{ display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; }
+  .num-row label{ font-weight:700; }
+  .num-row input{ width:4.5ch; font-family:var(--f-hand); font-weight:700; font-size:2.1rem; line-height:1.1; color:var(--pen); text-align:center; background:transparent; border:0; border-bottom:2px solid var(--ink-soft); border-radius:0; padding:0 4px; }
+  .num-row input:focus-visible{ outline:none; border-bottom-color:var(--pen); background:var(--pen-soft); }
+  .num-row.is-ok input{ color:var(--ok); border-bottom-color:var(--ok); }
+  .num-row.is-bad input{ color:var(--bad); border-bottom-color:var(--bad); text-decoration:line-through; }
+  .num-row .fix{ color:var(--ok); font-weight:700; }
+
+  /* Rückmeldung */
+  .fb{ display:flex; flex-direction:column; gap:4px; padding:14px 16px; border-radius:12px; border:1px solid transparent; animation:rise .22s ease-out; }
+  .fb p{ margin:0; max-width:64ch; }
+  .fb-head{ font-family:var(--f-display); font-weight:800; font-size:1.12rem; }
+  .fb.ok{ background:var(--ok-bg); border-color:color-mix(in srgb, var(--ok) 35%, transparent); }
+  .fb.ok .fb-head{ color:var(--ok); }
+  .fb.bad{ background:var(--bad-bg); border-color:color-mix(in srgb, var(--bad) 35%, transparent); }
+  .fb.bad .fb-head{ color:var(--bad); }
+  .fb.part{ background:var(--part-bg); border-color:color-mix(in srgb, var(--part) 35%, transparent); }
+  .fb.part .fb-head{ color:var(--part); }
+  @keyframes rise{ from{ opacity:0; transform:translateY(6px); } to{ opacity:1; transform:none; } }
+
+  .actions{ display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; padding-top:16px; border-top:1px solid var(--line); }
+  .hint{ color:var(--ink-soft); font-size:.92rem; }
+  .hint b{ color:var(--ok); }
+  .btn{ font:inherit; font-weight:700; padding:12px 22px; border-radius:12px; border:1.5px solid transparent; cursor:pointer; }
+  .btn.primary{ background:var(--pen); color:var(--on-pen); }
+  .btn.primary:disabled{ opacity:.4; cursor:not-allowed; }
+  .btn.ghost{ background:transparent; border-color:var(--line); color:var(--ink); }
+  .btn.ghost:hover{ border-color:var(--pen); color:var(--pen); }
+
+  /* Auswertung */
+  .res-top{ display:flex; flex-direction:column; gap:4px; }
+  .res-score{ margin:0; font-family:var(--f-display); font-weight:600; font-size:1.3rem; line-height:1.1; font-variant-numeric:tabular-nums; }
+  .res-score span{ font-weight:800; font-size:3.4rem; color:var(--pen); letter-spacing:-.02em; margin-right:4px; }
+  .res-msg{ margin:4px 0 0; font-size:1.05rem; max-width:56ch; }
+  .rs-list{ display:flex; flex-direction:column; gap:12px; }
+  .rs{ display:grid; grid-template-columns:minmax(0,1.4fr) minmax(0,1fr) 3.2em; align-items:center; gap:12px; }
+  .rs-l{ display:flex; flex-direction:column; font-weight:700; line-height:1.25; }
+  .rs-l small{ font-weight:400; color:var(--ink-soft); font-size:.85rem; }
+  .rs-bar{ display:block; height:10px; border-radius:5px; background:var(--surface-2); border:1px solid var(--line); overflow:hidden; }
+  .rs-bar i{ display:block; height:100%; }
+  .rs-v{ text-align:right; font-weight:700; font-variant-numeric:tabular-nums; }
+  .sec-h{ margin:6px 0 0; font-family:var(--f-display); font-weight:800; font-size:1.15rem; }
+  .miss{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:10px; }
+  .miss li{ display:grid; grid-template-columns:auto minmax(0,1fr); gap:12px; align-items:start; padding:12px 14px; border:1px solid var(--line); border-radius:10px; }
+  .tag{ display:inline-block; padding:2px 8px; border-radius:6px; background:var(--pen-soft); color:var(--pen); font-size:.74rem; font-weight:700; letter-spacing:.05em; text-transform:uppercase; white-space:nowrap; }
+  .miss p{ margin:0; }
+  .miss-q{ font-weight:700; }
+  .miss-a{ color:var(--ink-soft); font-size:.95rem; margin-top:2px !important; }
+  .miss-a b{ color:var(--ok); }
+  .perfect{ margin:0; font-weight:700; color:var(--ok); }
+
+  @media (max-width:560px){
+    .stop-lbl .lg{ display:none; }
+    .stop-lbl .sm{ display:inline; }
+    .stop-lbl{ font-size:.66rem; letter-spacing:.04em; }
+    .actions .btn{ flex:1 1 100%; }
+    .mx td{ width:64px; }
+    .rs{ grid-template-columns:minmax(0,1fr) 3.2em; }
+    .rs-bar{ grid-column:1 / -1; grid-row:2; }
+  }
+  @media (prefers-reduced-motion: reduce){
+    *, *::before, *::after{ animation:none !important; transition:none !important; }
+  }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <svg viewBox="0 0 44 44" aria-hidden="true">
+        <g transform="rotate(-28 22 22)">
+          <rect x="4" y="15" width="18" height="14" class="m-n"/>
+          <rect x="22" y="15" width="18" height="14" class="m-s"/>
+          <text x="13" y="22.5" class="m-t" style="font-size:10px">N</text>
+          <text x="31" y="22.5" class="m-t" style="font-size:10px">S</text>
+        </g>
+      </svg>
+      <div>
+        <h1>Geheimnis Magnet</h1>
+        <p id="mode">Quiz zu den Versuchen 1–5</p>
+      </div>
+    </div>
+    <div class="score" id="score" aria-live="polite"></div>
+  </header>
+
+  <nav class="track" id="track" aria-label="Fortschritt"></nav>
+
+  <main class="sheet" id="sheet"></main>
+</div>
+
+<script>
+(() => {
+  const VERSION = 3;
+
+  const STATIONS = [
+    { id: 1, label: 'Versuch 1', short: 'V1', title: 'Welche Stoffe sind magnetisch?', art: 'v1' },
+    { id: 2, label: 'Versuch 2', short: 'V2', title: 'Reichweite von Magneten', art: 'v2' },
+    { id: 3, label: 'Versuch 3', short: 'V3', title: 'Anziehung und Abstoßung der Pole', art: 'v3' },
+    { id: 4, label: 'Versuch 4', short: 'V4', title: 'Abstoßung von Magneten', art: 'v4' },
+    { id: 5, label: 'Versuch 5', short: 'V5', title: 'Einen Nagel magnetisieren', art: 'v5' },
+  ];
+
+  // Bei Multiple Choice steht die richtige Antwort vorn, weil die Reihenfolge beim Start gemischt wird.
+  const QUESTIONS = [
+    { st: 1, type: 'matrix',
+      q: 'Du hältst den Magneten an diese Gegenstände. Welche werden angezogen?',
+      sub: 'Kreuze in jeder Zeile an, so wie du es auf dem Arbeitsblatt gemacht hast.',
+      rowHead: 'Gegenstand', cols: ['ja', 'nein'],
+      rows: [['Eisennagel', 0], ['Büroklammer', 0], ['Aluminiumfolie', 1], ['Kupferdraht', 1], ['Holzstab', 1], ['Münze (5 Cent)', 0], ['Geodreieck', 1]],
+      explain: 'Nagel und Büroklammer bestehen aus Eisen. Überraschend ist die <b>5-Cent-Münze</b>: Sie hat einen Kern aus Eisen und ist nur außen mit Kupfer überzogen. Aluminium und Kupfer sind zwar Metalle, werden aber nicht angezogen. Holz und Kunststoff (Geodreieck) sowieso nicht.' },
+    { st: 1, type: 'mc',
+      q: 'Tim sagt: „Ein Magnet zieht alle Metalle an.“ Hat er recht?',
+      opts: ['Nein, weil auch Aluminium und Kupfer Metalle sind, die nicht angezogen werden.', 'Ja, weil alles angezogen wird, was aus Metall ist.', 'Ja, aber nur, wenn das Metall glänzt.', 'Nein, weil Magnete überhaupt keine Metalle anziehen.'],
+      explain: 'Ein Magnet zieht nur Gegenstände aus <b>Eisen, Nickel oder Cobalt</b> an. Viele andere Metalle wie Aluminium, Kupfer, Gold oder Silber bleiben einfach liegen.' },
+    { st: 1, type: 'multi',
+      q: 'Du findest ein silbern glänzendes Metallstück. Der Magnet zieht es nicht an. Woraus könnte es bestehen?',
+      sub: 'Mehrere Antworten können richtig sein.',
+      opts: ['Aluminium', 'Silber', 'Eisen', 'Nickel'], a: [0, 1],
+      explain: 'Eisen und Nickel würden vom Magneten angezogen. <b>Aluminium</b> und <b>Silber</b> glänzen zwar auch silbern, sind aber nicht magnetisierbar.' },
+
+    { st: 2, type: 'mc',
+      q: 'Was misst du in Versuch 2 mit dem Lineal?',
+      opts: ['Den Abstand d, ab dem sich die Büroklammer zu bewegen beginnt', 'Wie viele Büroklammern der Magnet festhalten kann', 'Wie lang der Magnet ist', 'Wie schnell die Büroklammer über das Lineal rutscht'],
+      explain: 'Du schiebst den Magneten langsam heran. Sobald die Büroklammer losrutscht, liest du den Abstand d ab, der die <b>Reichweite</b> des Magneten angibt.' },
+    { st: 2, type: 'mc',
+      q: 'Die Büroklammer setzt sich in Bewegung, obwohl der Magnet sie noch gar nicht berührt. Was zeigt das?',
+      opts: ['Ein Magnet wirkt auch über einen Abstand, ohne dass er etwas berühren muss.', 'Jemand hat an den Tisch gestoßen.', 'Der Magnet erzeugt einen Luftzug, der die Klammer schiebt.', 'Das Lineal ist selbst ein Magnet.'],
+      explain: 'Um jeden Magneten herum gibt es einen Bereich, in dem er wirkt: das <b>Magnetfeld</b>. Je näher die Büroklammer dem Magneten kommt, desto stärker wird sie angezogen.' },
+    { st: 2, type: 'number',
+      q: 'Eine Gruppe hat diese Werte gemessen. Berechne den Mittelwert.',
+      sub: 'Mittelwert: alle Werte zusammenzählen und durch die Anzahl der Messungen teilen.',
+      table: [['Messung 1', '4'], ['Messung 2', '6'], ['Messung 3', '5']],
+      answer: 5, unit: 'cm',
+      explain: '(4 + 6 + 5) : 3 = 15 : 3 = <b>5 cm</b>. Die Reichweite dieses Magneten beträgt also etwa 5 cm.' },
+    { st: 2, type: 'mc',
+      q: 'Warum führt ihr die Messung dreimal durch?',
+      opts: ['Weil einzelne Messungen ungenau sein können, sodass mehrere Messungen ein zuverlässigeres Ergebnis liefern.', 'Damit jedes Gruppenmitglied einmal messen darf.', 'Weil der Magnet mit jeder Messung stärker wird.', 'Weil der Magnet beim ersten Mal noch nicht richtig wirkt.'],
+      explain: 'Man schiebt nie ganz gleich schnell und liest nicht immer ganz genau ab. Aus mehreren Messungen bildet man den <b>Mittelwert</b>, der verlässlicher ist als eine einzelne Messung.' },
+
+    { st: 3, type: 'matrix',
+      q: 'Du näherst dem Magneten auf den Strohhalmen einen zweiten Magneten. Was passiert?',
+      sub: 'Kreuze für jedes Polpaar an.',
+      rowHead: 'Gegenüberliegende Pole', cols: ['ziehen an', 'stoßen ab'],
+      rows: [['Nordpol und Nordpol', 1], ['Nordpol und Südpol', 0], ['Südpol und Südpol', 1]],
+      explain: '<b>Gleiche Pole stoßen sich ab, ungleiche Pole ziehen sich an.</b> Nord und Nord oder Süd und Süd schieben sich weg, Nord und Süd schnappen zusammen.' },
+    { st: 3, type: 'mc',
+      q: 'Warum liegt der Magnet in Versuch 3 auf drei Strohhalmen?',
+      opts: ['Damit er leicht rollen kann und man sofort sieht, ob er angezogen oder weggeschoben wird.', 'Die Strohhalme machen den Magneten stärker.', 'Damit der Magnet nicht zerbricht.', 'Die Strohhalme leiten die Magnetkraft weiter.'],
+      explain: 'Direkt auf dem Tisch würde die Reibung den Magneten festhalten. Auf den Strohhalmen <b>rollt</b> er schon, wenn nur eine kleine Kraft auf ihn wirkt.' },
+    { st: 3, type: 'mc',
+      q: 'Bei einem Magneten ist die Farbe abgeblättert. Als du ein Ende an den Nordpol eines anderen Magneten hältst, wird es abgestoßen. Welcher Pol ist das?',
+      opts: ['Ein Nordpol', 'Ein Südpol', 'Das kann man so nicht herausfinden.', 'Ein Pluspol'],
+      explain: 'Weil sich nur gleiche Pole abstoßen, ist das unbekannte Ende ein <b>Nordpol</b>. Pluspol und Minuspol gibt es bei Batterien, nicht bei Magneten. Anziehung wäre übrigens kein sicherer Beweis, weil ein Stück Eisen von beiden Polen angezogen wird.' },
+
+    { st: 4, type: 'mc',
+      q: 'Welche Pole müssen sich in Versuch 4 gegenüberliegen, damit der Magnet weggeschoben wird?',
+      opts: ['Zwei gleiche Pole, zum Beispiel Südpol und Südpol', 'Ein Nordpol und ein Südpol', 'Egal, weil sich zwei Magnete immer abstoßen.', 'Die Mitten der beiden Magnete'],
+      explain: 'Nur <b>gleiche Pole</b> stoßen sich ab. Mit Nord- und Südpol würden die Magnete zusammenschnappen.' },
+    { st: 4, type: 'mc',
+      q: 'Der losgelassene Magnet rollt weg und bleibt im Abstand d liegen. Warum rollt er nicht immer weiter?',
+      opts: ['Weil die Abstoßung schwächer wird, je größer der Abstand ist, bis sie nicht mehr ausreicht.', 'Er hat seine ganze Magnetkraft verbraucht und ist jetzt entmagnetisiert.', 'Die Pole drehen sich in diesem Abstand plötzlich um.', 'Weil die Strohhalme dort zu Ende sind.'],
+      explain: 'Die Kraft zwischen zwei Magneten wird mit wachsendem Abstand schnell <b>schwächer</b>. Sobald sie die Reibung nicht mehr überwinden kann, bleibt der Magnet liegen. Seine Magnetkraft hat er dabei nicht verloren.' },
+    { st: 4, type: 'mc',
+      q: 'Gruppe A misst d = 3 cm. Gruppe B macht denselben Versuch mit zwei stärkeren Magneten. Was erwartest du bei Gruppe B?',
+      opts: ['Einen größeren Abstand d', 'Einen kleineren Abstand d', 'Genau denselben Abstand d', 'Die Magnete ziehen sich jetzt an.'],
+      explain: 'Weil stärkere Magnete weiter wirken, schieben sie sich auch <b>weiter auseinander</b>, sodass der Abstand d größer wird.' },
+
+    { st: 5, type: 'mc',
+      q: 'Wie musst du über den Nagel streichen, damit er selbst zum Magneten wird?',
+      opts: ['20-mal mit demselben Pol, immer in dieselbe Richtung', '20-mal hin und her, wie beim Radieren', 'Abwechselnd mit dem Nord- und dem Südpol', 'Einmal ganz fest mit der Mitte des Magneten'],
+      explain: 'Nur wenn du immer mit <b>demselben Pol in dieselbe Richtung</b> streichst, wird der Nagel magnetisiert. Hin und her oder mit wechselnden Polen hebt sich die Wirkung wieder auf.' },
+    { st: 5, type: 'mc',
+      q: 'Welche Messreihe passt zu Versuch 5? Angegeben ist, wie viele Büroklammern der Nagel hält.',
+      seq: ['vorher', 'nach Bestreichen', 'nach Fallenlassen'],
+      opts: [[0, 5, 1], [5, 0, 5], [0, 0, 0], [1, 3, 8]],
+      explain: 'Vorher ist der Nagel kein Magnet und hält <b>keine</b> Büroklammer. Nach dem Bestreichen hält er einige. Nach dem Fallenlassen ist er wieder <b>schwächer</b> und hält weniger.' },
+    { st: 5, type: 'mc',
+      q: 'Warum hält der Nagel nach dem Fallenlassen weniger Büroklammern?',
+      opts: ['Die Erschütterungen haben ihn wieder entmagnetisiert.', 'Beim Aufprall sind Eisenteile abgebrochen.', 'Der Tisch hat die Magnetkraft aufgesaugt.', 'Der Nagel hat sich beim Fallen in einen Südpol verwandelt.'],
+      explain: 'Man kann sich vorstellen, dass im Eisen ganz viele winzige Magnete stecken (Elementarmagnete). Beim Bestreichen richten sie sich alle gleich aus. Durch Erschütterungen geraten sie wieder durcheinander, sodass der Nagel <b>entmagnetisiert</b> wird.' },
+  ];
+
+  QUESTIONS.forEach(q => { if (q.type === 'mc' && q.a == null) q.a = 0; });
+
+  /* ---------- Zeichnungen ---------- */
+  const svg = (w, h, inner, label) => `<svg class="art" viewBox="0 0 ${w} ${h}" role="img" aria-label="${label}">${inner}</svg>`;
+  const pole = p => p === 'N' ? 'm-n' : 'm-s';
+  const magnet = (x, y, w, h, l, r) => {
+    const hw = w / 2;
+    return `<rect x="${x}" y="${y}" width="${hw}" height="${h}" class="${pole(l)}"/><rect x="${x + hw}" y="${y}" width="${hw}" height="${h}" class="${pole(r)}"/>` +
+      `<text x="${x + hw / 2}" y="${y + h / 2}" class="m-t">${l}</text><text x="${x + hw * 1.5}" y="${y + h / 2}" class="m-t">${r}</text>`;
+  };
+  const clip = (x, y) => `<path class="clip" d="M${x + 10} ${y + 10}H${x + 32}a4 4 0 0 0 0-8H${x + 6}a6 6 0 0 0 0 12H${x + 36}"/>`;
+  const nail = (x, y, len) => `<g class="steel"><rect x="${x}" y="${y - 5}" width="5" height="18" rx="1.5"/><rect x="${x + 5}" y="${y}" width="${len}" height="8"/><path d="M${x + 5 + len} ${y}L${x + 19 + len} ${y + 4}L${x + 5 + len} ${y + 8}Z"/></g>`;
+  const arrow = (x1, y, x2, cls = 'arr') => {
+    const d = Math.sign(x2 - x1);
+    return `<g class="${cls}"><line x1="${x1}" y1="${y}" x2="${x2 - d * 5}" y2="${y}"/><path d="M${x2} ${y}L${x2 - d * 9} ${y - 4.5}L${x2 - d * 9} ${y + 4.5}Z"/></g>`;
+  };
+  const dim = (x1, x2, y, t) => `<g class="dim"><line x1="${x1}" y1="${y}" x2="${x2}" y2="${y}"/><line x1="${x1}" y1="${y - 6}" x2="${x1}" y2="${y + 6}"/><line x1="${x2}" y1="${y - 6}" x2="${x2}" y2="${y + 6}"/><text x="${(x1 + x2) / 2}" y="${y - 7}">${t}</text></g>`;
+  const straws = (xs, y) => xs.map(cx => `<circle class="straw" cx="${cx}" cy="${y}" r="5"/>`).join('');
+  const ruler = (x, y, w, h, n, step, x0) => {
+    let t = '';
+    for (let i = 0; i <= n; i++) {
+      const tx = x0 + i * step;
+      t += `<line x1="${tx}" y1="${y}" x2="${tx}" y2="${y + 8}"/><text x="${tx}" y="${y + h - 4}">${i}</text>`;
+      if (i < n) t += `<line x1="${tx + step / 2}" y1="${y}" x2="${tx + step / 2}" y2="${y + 4}"/>`;
+    }
+    return `<g class="ruler"><rect x="${x}" y="${y}" width="${w}" height="${h}" rx="2"/>${t}</g>`;
+  };
+
+  const ART = {
+    v1: () => svg(340, 80,
+      magnet(14, 26, 120, 28, 'N', 'S') + arrow(166, 40, 146) + clip(172, 33) + arrow(236, 40, 216) + nail(242, 36, 70),
+      'Ein Stabmagnet zieht eine Büroklammer und einen Nagel an'),
+    v2: () => svg(340, 88,
+      dim(58, 196, 20, 'd') + clip(20, 42) + magnet(196, 32, 104, 24, 'N', 'S') + arrow(334, 44, 308) + ruler(10, 58, 320, 22, 12, 24, 22),
+      'Ein Magnet wird am Lineal auf eine Büroklammer zugeschoben, Abstand d'),
+    v3: () => svg(340, 76,
+      magnet(22, 30, 112, 26, 'N', 'S') + straws([44, 78, 112], 62) + `<text class="hand" x="170" y="50">?</text>` + magnet(206, 30, 112, 26, 'N', 'S'),
+      'Ein Magnet auf drei Strohhalmen, ein zweiter Magnet wird angenähert'),
+    v4: () => svg(340, 84,
+      magnet(14, 30, 104, 26, 'N', 'S') + `<text class="cap" x="66" y="76">FESTGEHALTEN</text>` + dim(118, 200, 18, 'd') + magnet(200, 30, 104, 26, 'S', 'N') + straws([220, 252, 284], 62) + arrow(309, 43, 334),
+      'Zwei Magnete mit gleichen Polen gegenüber stoßen sich ab, Abstand d'),
+    v5: () => svg(340, 80,
+      `<g transform="rotate(32 112 30)">${magnet(76, 19, 72, 22, 'S', 'N')}</g>` + arrow(160, 46, 286, 'arr dashed') + `<text class="hand" x="224" y="38">20 ×</text>` + nail(24, 58, 262),
+      'Ein Magnet streicht 20-mal in dieselbe Richtung über einen Eisennagel'),
+  };
+
+  /* ---------- Zustand ---------- */
+  const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+  const initResp = q => q.type === 'multi' ? [] : q.type === 'matrix' ? q.rows.map(() => null) : q.type === 'number' ? '' : null;
+  const allIdx = () => QUESTIONS.map((_, i) => i);
+
+  function freshState(queue, mode) {
+    const s = { v: VERSION, queue, mode, pos: 0, resp: {}, res: {}, order: {}, done: false };
+    queue.forEach(i => {
+      const q = QUESTIONS[i];
+      s.resp[i] = initResp(q);
+      if (q.type === 'mc' || q.type === 'multi') s.order[i] = shuffle(q.opts.map((_, k) => k));
+    });
+    return s;
+  }
+  const validState = s => s && s.v === VERSION && Array.isArray(s.queue) && s.queue.length > 0 &&
+    s.queue.every(i => Number.isInteger(i) && i >= 0 && i < QUESTIONS.length) &&
+    Number.isInteger(s.pos) && s.pos >= 0 && s.pos < s.queue.length && s.resp && s.res && s.order;
+
+  let S;
+
+  /* ---------- Bewertung ---------- */
+  const maxPts = q => q.type === 'matrix' ? q.rows.length : 1;
+  const parseNum = v => {
+    const n = parseFloat(String(v || '').replace(',', '.').replace(/[^\d.\-]/g, ''));
+    return Number.isFinite(n) ? n : null;
+  };
+  const fmtNum = n => String(n).replace('.', ',');
+
+  function complete(q, r) {
+    if (q.type === 'mc') return r != null;
+    if (q.type === 'multi') return r.length > 0;
+    if (q.type === 'matrix') return r.every(v => v != null);
+    if (q.type === 'number') return parseNum(r) != null;
+    return false;
+  }
+
+  function grade(q, r) {
+    if (q.type === 'mc') return { score: r === q.a ? 1 : 0 };
+    if (q.type === 'multi') {
+      // Ein Punkt nur, wenn genau die richtigen Antworten angehakt sind
+      const hits = r.filter(k => q.a.includes(k)).length;
+      return { score: hits === q.a.length && r.length === q.a.length ? 1 : 0, partial: hits > 0 };
+    }
+    if (q.type === 'number') return { score: Math.abs(parseNum(r) - q.answer) < 0.05 ? 1 : 0 };
+    const ok = q.rows.map(([, a], i) => r[i] === a);
+    return { score: ok.filter(Boolean).length, ok };
+  }
+
+  function totals() {
+    let pts = 0, max = 0;
+    S.queue.forEach(i => { max += maxPts(QUESTIONS[i]); if (S.res[i]) pts += S.res[i].score; });
+    return { pts, max };
+  }
+
+  /* ---------- Darstellung ---------- */
+  const $ = (sel, root = document) => root.querySelector(sel);
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const sheet = $('#sheet'), track = $('#track');
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let pendingFocus = null;
+
+  function renderChrome() {
+    const cur = S.done ? null : QUESTIONS[S.queue[S.pos]].st;
+    track.innerHTML = STATIONS.map(st => {
+      const qs = S.queue.filter(i => QUESTIONS[i].st === st.id);
+      const done = qs.filter(i => S.res[i]).length;
+      const pct = qs.length ? done / qs.length * 100 : 0;
+      return `<div class="stop${st.id === cur ? ' cur' : ''}${qs.length ? '' : ' off'}" title="${st.label}: ${st.title}">
+        <span class="stop-bar"><i style="width:${pct}%"></i></span>
+        <span class="stop-lbl"><span class="lg">${st.label}</span><span class="sm">${st.short}</span></span></div>`;
+    }).join('');
+    const { pts, max } = totals();
+    $('#score').innerHTML = `<b>${pts}</b><span>von ${max} Punkten</span>`;
+    $('#mode').textContent = S.mode === 'retry' ? 'Übungsrunde: nur deine Fehler' : 'Quiz zu den Versuchen 1–5';
+  }
+
+  function mcHTML(q, qi, res) {
+    const multi = q.type === 'multi';
+    const isSel = k => multi ? S.resp[qi].includes(k) : S.resp[qi] === k;
+    const isRight = k => multi ? q.a.includes(k) : k === q.a;
+    const legend = q.seq ? `<div class="seq-legend" aria-hidden="true"><span></span><div>${q.seq.map(t => `<span>${t}</span>`).join('')}</div><span></span></div>` : '';
+    const opts = S.order[qi].map((k, j) => {
+      let cls = 'opt', ico = '';
+      if (res) {
+        if (isRight(k) && (isSel(k) || !multi)) { cls += ' is-ok'; ico = '✓'; }
+        else if (isRight(k)) { cls += ' is-miss'; ico = '✓'; }
+        else if (isSel(k)) { cls += ' is-bad'; ico = '✗'; }
+        else cls += ' is-dim';
+      }
+      const content = q.seq
+        ? `<span class="seq" aria-label="${q.seq.map((t, n) => `${t}: ${q.opts[k][n]}`).join(', ')}">${q.opts[k].map(v => `<b>${v}</b>`).join('')}</span>`
+        : `<span>${q.opts[k]}</span>`;
+      const key = multi ? (isSel(k) ? '✓' : '') : 'ABCD'[j];
+      return `<button type="button" class="${cls}" data-opt="${k}" data-fk="opt${k}" aria-pressed="${isSel(k)}"${res ? ' disabled' : ''}>
+        <span class="opt-key" aria-hidden="true">${key}</span>${content}<span class="opt-ico" aria-hidden="true">${ico}</span></button>`;
+    }).join('');
+    return `${legend}<div class="opts${multi ? ' multi' : ''}" role="group" aria-label="Antworten">${opts}</div>`;
+  }
+
+  function matrixHTML(q, qi, res) {
+    const r = S.resp[qi];
+    const head = `<tr><th scope="col">${q.rowHead}</th>${q.cols.map(c => `<th scope="col">${c}</th>`).join('')}<th class="res"><span hidden>Ergebnis</span></th></tr>`;
+    const body = q.rows.map(([label, ans], ri) => {
+      const v = r[ri];
+      let rowCls = '', mark = '';
+      if (res) { const ok = v === ans; rowCls = ok ? 'is-ok' : 'is-bad'; mark = ok ? '✓' : '✗'; }
+      const cells = q.cols.map((c, ci) => {
+        let cls = 'box';
+        if (v === ci) cls += ' sel';
+        if (res && v !== ans && ci === ans) cls += ' should';
+        return `<td><button type="button" class="${cls}" data-cell="${ri},${ci}" data-fk="c${ri}_${ci}" aria-pressed="${v === ci}" aria-label="${label}: ${c}"${res ? ' disabled' : ''}>${v === ci ? 'X' : ''}</button></td>`;
+      }).join('');
+      return `<tr class="${rowCls}"><th scope="row">${label}</th>${cells}<td class="res" aria-label="${mark === '✓' ? 'richtig' : mark ? 'falsch' : ''}">${mark}</td></tr>`;
+    }).join('');
+    return `<div class="mx-wrap"><table class="mx"><thead>${head}</thead><tbody>${body}</tbody></table></div>`;
+  }
+
+  function numberHTML(q, qi, res) {
+    const rows = q.table.map(([a, b]) => `<tr><td>${a}</td><td class="val">${b}</td></tr>`).join('');
+    const state = res ? (res.score ? ' is-ok' : ' is-bad') : '';
+    const fix = res && !res.score ? `<span class="fix">richtig: ${fmtNum(q.answer)} ${q.unit}</span>` : '';
+    return `<div class="tbl-wrap"><table class="data"><thead><tr><th>Messung</th><th>Abstand d in ${q.unit}</th></tr></thead><tbody>${rows}</tbody></table></div>
+      <div class="num-row${state}"><label for="num">Mittelwert d =</label>
+      <input id="num" data-fk="num" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" value="${esc(S.resp[qi] || '')}"${res ? ' disabled' : ''}>
+      <span>${q.unit}</span>${fix}</div>`;
+  }
+
+  function feedbackHTML(q, res) {
+    const max = maxPts(q);
+    let cls, head;
+    if (res.score === max) { cls = 'ok'; head = max > 1 ? 'Alles richtig!' : 'Richtig!'; }
+    else if (res.partial) { cls = 'part'; head = 'Nicht ganz. Schau dir an, welche Antworten markiert sind.'; }
+    else if (res.score === 0) { cls = 'bad'; head = max > 1 ? 'Leider alles falsch.' : 'Leider falsch.'; }
+    else { cls = 'part'; head = `${res.score} von ${max} richtig`; }
+    return `<div class="fb ${cls}" role="status"><strong class="fb-head">${head}</strong><p>${q.explain}</p></div>`;
+  }
+
+  const HINTS = { mc: 'Wähle eine Antwort.', multi: 'Hake alle passenden Antworten an.', matrix: 'Kreuze in jeder Zeile an.', number: 'Gib eine Zahl ein.' };
+
+  function questionHTML() {
+    const qi = S.queue[S.pos], q = QUESTIONS[qi], st = STATIONS[q.st - 1], res = S.res[qi];
+    const eyebrow = `${st.label} · ${st.title}`;
+    const body = q.type === 'matrix' ? matrixHTML(q, qi, res) : q.type === 'number' ? numberHTML(q, qi, res) : mcHTML(q, qi, res);
+    const last = S.pos === S.queue.length - 1;
+    const label = !res ? 'Prüfen' : last ? 'Auswertung ansehen' : 'Weiter';
+    const disabled = !res && !complete(q, S.resp[qi]);
+    const hint = res
+      ? (res.score ? `<b>+${res.score} ${res.score === 1 ? 'Punkt' : 'Punkte'}</b>` : 'Kein Punkt. Lies die Erklärung, damit du es beim nächsten Mal weißt.')
+      : HINTS[q.type];
+    return `
+      <div class="eyebrow"><span class="st">${eyebrow}</span><span>Frage ${S.pos + 1} von ${S.queue.length}</span></div>
+      ${st.art ? ART[st.art]() : ''}
+      <div class="qhead"><h2 class="prompt">${q.q}</h2>${q.sub ? `<p class="sub">${q.sub}</p>` : ''}</div>
+      ${body}
+      ${res ? feedbackHTML(q, res) : ''}
+      <div class="actions"><span class="hint" id="hint">${hint}</span>
+        <button type="button" class="btn primary" id="primary" data-fk="primary"${disabled ? ' disabled' : ''}>${label}</button></div>`;
+  }
+
+  function answerText(q, res, r) {
+    if (q.type === 'mc') return `Richtig: <b>${q.seq ? q.opts[q.a].join(' → ') : q.opts[q.a]}</b>`;
+    if (q.type === 'multi') return `Richtig: <b>${q.a.map(k => q.opts[k]).join(' und ')}</b>`;
+    if (q.type === 'number') return `Richtig: <b>${fmtNum(q.answer)} ${q.unit}</b>, während deine Antwort ${esc(r)} ${q.unit} war.`;
+    return q.rows.map(([label, a], i) => res.ok[i] ? '' : `${label}: <b>${q.cols[a]}</b>`).filter(Boolean).join(' · ');
+  }
+
+  function resultHTML() {
+    const { pts, max } = totals();
+    const p = max ? pts / max : 0;
+    const msg = p === 1 ? 'Weil du alles richtig hast, bist du ein echter Magnet-Profi!'
+      : p >= 0.85 ? 'Stark! Du hast die Versuche richtig gut verstanden.'
+      : p >= 0.65 ? 'Gut gemacht! Ein paar Dinge kannst du noch wiederholen.'
+      : p >= 0.4 ? 'Eine gute Grundlage. Schau dir die Fehler unten an und übe sie noch einmal.'
+      : 'Da geht noch mehr. Lies dir die Erklärungen durch und versuch es gleich noch einmal.';
+    const rows = STATIONS.map(st => {
+      const qs = S.queue.filter(i => QUESTIONS[i].st === st.id);
+      if (!qs.length) return '';
+      const sp = qs.reduce((a, i) => a + (S.res[i] ? S.res[i].score : 0), 0);
+      const sm = qs.reduce((a, i) => a + maxPts(QUESTIONS[i]), 0);
+      const r = sp / sm;
+      const color = r === 1 ? 'var(--ok)' : r >= 0.5 ? 'var(--pen)' : 'var(--bad)';
+      return `<div class="rs"><span class="rs-l">${st.label}<small>${st.title}</small></span>
+        <span class="rs-bar"><i style="width:${r * 100}%;background:${color}"></i></span><span class="rs-v">${sp}/${sm}</span></div>`;
+    }).join('');
+    const miss = S.queue.filter(i => S.res[i] && S.res[i].score < maxPts(QUESTIONS[i]));
+    const missHTML = miss.length
+      ? `<h3 class="sec-h">Das schaust du dir am besten noch einmal an</h3>
+         <ul class="miss">${miss.map(i => {
+            const q = QUESTIONS[i];
+            return `<li><span class="tag">${STATIONS[q.st - 1].short}</span><div><p class="miss-q">${q.q}</p><p class="miss-a">${answerText(q, S.res[i], S.resp[i])}</p></div></li>`;
+          }).join('')}</ul>`
+      : `<p class="perfect">Super, dass du keinen einzigen Fehler gemacht hast!</p>`;
+    return `
+      <div class="eyebrow"><span class="st">${S.mode === 'retry' ? 'Übungsrunde · Auswertung' : 'Auswertung'}</span><span>${S.queue.length} ${S.queue.length === 1 ? 'Frage' : 'Fragen'}</span></div>
+      <div class="res-top"><h2 class="res-score"><span>${pts}</span>von ${max} Punkten</h2><p class="res-msg">${msg}</p></div>
+      <div class="rs-list">${rows}</div>
+      ${missHTML}
+      <div class="actions">
+        ${miss.length ? `<button type="button" class="btn ghost" data-act="retry" data-fk="retry">Fehler üben (${miss.length})</button>` : '<span></span>'}
+        <button type="button" class="btn primary" data-act="restart" data-fk="restart">Quiz neu starten</button>
+      </div>`;
+  }
+
+  function render() {
+    const active = document.activeElement;
+    const fk = pendingFocus || (active && active.dataset ? active.dataset.fk : null);
+    pendingFocus = null;
+    renderChrome();
+    sheet.innerHTML = S.done ? resultHTML() : questionHTML();
+    if (fk) {
+      const el = sheet.querySelector(`[data-fk="${fk}"]`);
+      if (el && !el.disabled) el.focus({ preventScroll: true });
+      else if (fk !== 'primary') { const p = $('#primary'); if (p && !p.disabled) p.focus({ preventScroll: true }); }
+    }
+  }
+
+  const behavior = reduceMotion ? 'auto' : 'smooth';
+  function toSheetTop() {
+    const top = sheet.getBoundingClientRect().top;
+    if (top < 0) window.scrollBy({ top: top - 12, behavior });
+  }
+  function toActions() {
+    const a = $('.actions', sheet);
+    if (a) a.scrollIntoView({ block: 'nearest', behavior });
+  }
+
+  /* ---------- Ablauf ---------- */
+  function primary() {
+    const qi = S.queue[S.pos], q = QUESTIONS[qi];
+    if (!S.res[qi]) {
+      if (!complete(q, S.resp[qi])) return;
+      S.res[qi] = grade(q, S.resp[qi]);
+      pendingFocus = 'primary';
+      render();
+      toActions();
+    } else {
+      if (S.pos < S.queue.length - 1) S.pos++;
+      else S.done = true;
+      pendingFocus = S.done ? 'restart' : 'primary';
+      render();
+      toSheetTop();
+    }
+  }
+
+  function choose(qi, q, k) {
+    if (q.type !== 'multi') { S.resp[qi] = k; return; }
+    const r = S.resp[qi], at = r.indexOf(k);
+    if (at >= 0) r.splice(at, 1); else r.push(k);
+  }
+
+  sheet.addEventListener('click', e => {
+    const t = e.target.closest('button');
+    if (!t || t.disabled) return;
+    if (t.dataset.act === 'restart') { S = freshState(allIdx(), 'all'); pendingFocus = 'primary'; render(); toSheetTop(); return; }
+    if (t.dataset.act === 'retry') {
+      const miss = S.queue.filter(i => S.res[i] && S.res[i].score < maxPts(QUESTIONS[i]));
+      S = freshState(miss, 'retry'); pendingFocus = 'primary'; render(); toSheetTop(); return;
+    }
+    if (S.done) return;
+    const qi = S.queue[S.pos], q = QUESTIONS[qi];
+    if (t.id === 'primary') { primary(); return; }
+    if (S.res[qi]) return;
+    if (t.dataset.opt != null) { choose(qi, q, +t.dataset.opt); render(); return; }
+    if (t.dataset.cell) { const [ri, ci] = t.dataset.cell.split(',').map(Number); S.resp[qi][ri] = ci; render(); }
+  });
+
+  sheet.addEventListener('input', e => {
+    if (e.target.id !== 'num' || S.done) return;
+    const qi = S.queue[S.pos];
+    S.resp[qi] = e.target.value;
+    const p = $('#primary');
+    if (p) p.disabled = !complete(QUESTIONS[qi], S.resp[qi]);
+  });
+
+  document.addEventListener('keydown', e => {
+    if (e.altKey || e.ctrlKey || e.metaKey || !S) return;
+    const tag = e.target.tagName;
+    if (e.key === 'Enter' && tag !== 'BUTTON' && tag !== 'A') {
+      const p = $('#primary');
+      if (p && !p.disabled) { e.preventDefault(); p.click(); }
+      return;
+    }
+    if (S.done || tag === 'INPUT' || e.key.length !== 1) return;
+    const qi = S.queue[S.pos], q = QUESTIONS[qi];
+    if ((q.type !== 'mc' && q.type !== 'multi') || S.res[qi]) return;
+    let j = '1234'.indexOf(e.key);
+    if (j < 0) j = 'abcd'.indexOf(e.key.toLowerCase());
+    if (j >= 0 && j < S.order[qi].length) { const k = S.order[qi][j]; choose(qi, q, k); pendingFocus = `opt${k}`; render(); }
+  });
+
+  function start(data) {
+    S = data && validState(data.S) ? data.S : freshState(allIdx(), 'all');
+    if (window.claude && window.claude.hot && typeof window.claude.hot.snapshot === 'function') {
+      window.claude.hot.snapshot(() => ({ S }));
+    }
+    render();
+  }
+
+  window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude?.hot?.data ?? {});
+})();
+</script>
