@@ -1,7 +1,17 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Geheimnis Magnet Quiz</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,700&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Caveat:wght@600;700&display=swap">
+<script>
+  // Gemerkte Darstellung setzen, bevor die Seite gezeichnet wird, damit nichts aufblitzt
+  try {
+    const mode = localStorage.getItem('magnetQuiz.mode');
+    if (mode === 'dark' || mode === 'light') document.documentElement.dataset.mode = mode;
+    if (localStorage.getItem('magnetQuiz.cb') === '1') document.documentElement.dataset.cb = 'on';
+  } catch (e) { /* Speicher gesperrt */ }
+</script>
 <style>
   :root{
     --paper:#F3F6F8; --grid:rgba(45,95,150,.09);
@@ -17,8 +27,9 @@
     --f-body:"Atkinson Hyperlegible","Segoe UI",system-ui,sans-serif;
     --f-hand:"Caveat","Segoe Print","Chalkboard SE","Comic Sans MS",cursive;
   }
+  /* Dunkel nach Gerät oder Umgebung (data-theme), außer man hat im Quiz selbst gewählt (data-mode) */
   @media (prefers-color-scheme: dark){
-    :root:not([data-theme="light"]){
+    :root:not([data-theme="light"]):not([data-mode="light"]){
       color-scheme:dark;
       --paper:#0F131A; --grid:rgba(130,160,210,.07);
       --surface:#181E28; --surface-2:#1F2633;
@@ -31,7 +42,7 @@
       --shadow:0 1px 2px rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.35);
     }
   }
-  :root[data-theme="dark"]{
+  :root[data-theme="dark"]:not([data-mode="light"]), :root[data-mode="dark"]{
     color-scheme:dark;
     --paper:#0F131A; --grid:rgba(130,160,210,.07);
     --surface:#181E28; --surface-2:#1F2633;
@@ -50,19 +61,22 @@
     --ok:#0065A8; --ok-bg:#E1EEF9; --bad:#B34A00; --bad-bg:#FCEBDD; --part:#56627A; --part-bg:#EEF1F5;
   }
   @media (prefers-color-scheme: dark){
-    :root[data-cb="on"]:not([data-theme="light"]){
+    :root[data-cb="on"]:not([data-theme="light"]):not([data-mode="light"]){
       --north:#D96A1E; --south:#3F97CF;
       --ok:#6CBDF0; --ok-bg:#10283A; --bad:#F2A054; --bad-bg:#3A2512; --part:#A3AEC0; --part-bg:#252C38;
     }
   }
-  :root[data-theme="dark"][data-cb="on"]{
+  :root[data-theme="dark"][data-cb="on"]:not([data-mode="light"]), :root[data-mode="dark"][data-cb="on"]{
     --north:#D96A1E; --south:#3F97CF;
     --ok:#6CBDF0; --ok-bg:#10283A; --bad:#F2A054; --bad-bg:#3A2512; --part:#A3AEC0; --part-bg:#252C38;
   }
 
   *{ box-sizing:border-box; }
-  /* iPad/iPhone: kein Zoomen bei schnellem Doppeltippen, kein grauer Tipp-Blitz */
+  /* iPad/iPhone: kein Zoomen bei schnellem Doppeltippen, kein grauer Tipp-Blitz, keine größere Schrift im Querformat.
+     Langes Drücken auf Knöpfe markiert keinen Text und öffnet kein Menü. Zwei-Finger-Zoom bleibt erlaubt. */
+  html{ -webkit-text-size-adjust:100%; text-size-adjust:100%; touch-action:manipulation; }
   button, input{ touch-action:manipulation; -webkit-tap-highlight-color:transparent; }
+  button{ -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; }
   body{
     background-color:var(--paper);
     background-image:
@@ -76,18 +90,24 @@
   }
   :focus-visible{ outline:3px solid var(--pen); outline-offset:2px; }
 
-  .wrap{ max-width:720px; margin:0 auto; padding-inline:16px; padding-block:24px 40px; display:flex; flex-direction:column; gap:18px; }
+  /* Seitenrand hält im Querformat Abstand zur Notch */
+  .wrap{ max-width:720px; margin:0 auto; padding-block:24px 40px; padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px)); display:flex; flex-direction:column; gap:18px; }
 
-  /* Kopf */
-  .top{ display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; }
+  /* Nur auf schmalen Bildschirmen: .lg zeigt die lange Beschriftung, .sm die kurze */
+  .sm{ display:none; }
+
+  /* Kopf: oben der Titel, darunter die Schalter links und der Punktestand rechts */
+  .top{ display:flex; flex-direction:column; gap:14px; }
   .brand{ display:flex; align-items:center; gap:12px; }
   .brand svg{ width:44px; height:44px; flex:none; }
   .brand h1{ font-family:var(--f-display); font-weight:800; font-size:clamp(1.55rem, 4.4vw, 2.05rem); line-height:1.05; letter-spacing:-.015em; margin:0; }
   .brand p{ margin:2px 0 0; color:var(--ink-soft); font-size:.9rem; }
-  .top-r{ display:flex; align-items:center; gap:10px 16px; flex-wrap:wrap; }
-  .cb-toggle{ display:inline-flex; align-items:center; gap:8px; padding:6px 12px; border:1.5px solid var(--line); border-radius:999px; background:var(--surface); color:var(--ink-soft); font:inherit; font-size:.85rem; font-weight:700; cursor:pointer; }
-  .cb-toggle[aria-pressed="true"]{ border-color:var(--pen); color:var(--pen); background:var(--pen-soft); }
-  @media (hover: hover){ .cb-toggle:hover{ border-color:var(--pen); color:var(--pen); } }
+  .top-r{ display:flex; align-items:center; justify-content:space-between; gap:10px 16px; flex-wrap:wrap; }
+  .prefs{ display:flex; gap:8px; flex-wrap:wrap; }
+  .pill{ display:inline-flex; align-items:center; gap:8px; min-height:36px; padding:6px 12px; border:1.5px solid var(--line); border-radius:999px; background:var(--surface); color:var(--ink-soft); font:inherit; font-size:.85rem; font-weight:700; cursor:pointer; }
+  .pill[aria-pressed="true"]{ border-color:var(--pen); color:var(--pen); background:var(--pen-soft); }
+  @media (hover: hover){ .pill:hover{ border-color:var(--pen); color:var(--pen); } }
+  .pill .ico{ width:16px; height:16px; flex:none; fill:currentColor; }
   .sw{ display:inline-flex; width:22px; height:12px; border-radius:2px; overflow:hidden; }
   .sw i{ flex:1; }
   .sw i:first-child{ background:var(--north); }
@@ -100,7 +120,6 @@
   .nav{ display:flex; flex-wrap:wrap; gap:10px 18px; }
   .grp{ display:flex; flex-direction:column; gap:5px; }
   .grp-lbl{ font-size:.72rem; font-weight:700; letter-spacing:.07em; text-transform:uppercase; color:var(--ink-soft); white-space:nowrap; }
-  .grp-lbl .sm{ display:none; }
   .grp.cur .grp-lbl{ color:var(--pen); }
   .chips{ display:flex; gap:4px; }
   .qchip{ min-width:32px; height:32px; padding:0 6px; border-radius:8px; border:1.5px solid var(--line); background:var(--surface); color:var(--ink-soft); font:inherit; font-size:.85rem; font-weight:700; font-variant-numeric:tabular-nums; cursor:pointer; transition:border-color .15s, background-color .15s; }
@@ -114,7 +133,7 @@
   :root[data-cb="on"] .mk{ display:inline; }
 
   /* Blatt */
-  .sheet{ background:var(--surface); border:1px solid var(--line); border-radius:16px; box-shadow:var(--shadow); padding:clamp(18px, 4.5vw, 34px); display:flex; flex-direction:column; gap:20px; }
+  .sheet{ --pad:clamp(18px, 4.5vw, 34px); background:var(--surface); border:1px solid var(--line); border-radius:16px; box-shadow:var(--shadow); padding:var(--pad); display:flex; flex-direction:column; gap:20px; }
   .eyebrow{ display:flex; justify-content:space-between; gap:6px 14px; flex-wrap:wrap; font-size:.76rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-soft); font-variant-numeric:tabular-nums; }
   .eyebrow .st{ color:var(--pen); }
   .art{ display:block; width:100%; max-width:340px; height:auto; }
@@ -144,9 +163,6 @@
   .coin5 + .coin-t{ fill:#fff; } .coin10 + .coin-t{ fill:#3F3105; }
   .foil{ fill:var(--alu); stroke:var(--alu-line); stroke-width:1; stroke-linejoin:round; }
   .wire{ fill:none; stroke:var(--copper); stroke-width:2.4; stroke-linecap:round; }
-  .stick{ stroke:var(--wood); stroke-width:4; stroke-linecap:round; }
-  .stick-tip{ fill:var(--wood); }
-  .plastic{ fill:var(--pen-soft); stroke:var(--ink-soft); stroke-width:1.5; stroke-linejoin:round; }
   .hand{ fill:var(--pen); font:700 22px var(--f-hand); text-anchor:middle; }
   .lbl{ fill:var(--ink-soft); font:700 8px var(--f-body); text-anchor:middle; }
   .cap{ fill:var(--ink-soft); font:700 10px var(--f-body); text-anchor:middle; letter-spacing:.04em; }
@@ -198,7 +214,9 @@
   .data thead th{ font-size:.74rem; font-weight:700; letter-spacing:.07em; text-transform:uppercase; color:var(--ink-soft); background:var(--surface-2); }
   .data td.val{ text-align:center; font-family:var(--f-hand); font-weight:700; font-size:1.5rem; line-height:1.1; color:var(--pen); font-variant-numeric:tabular-nums; }
   .data tr.mean > *{ border-top:2px solid var(--ink-soft); }
-  .data input{ width:3.4em; font:inherit; color:inherit; text-align:center; background:var(--pen-soft); border:0; border-bottom:2px solid var(--pen); border-radius:4px 4px 0 0; padding:0 4px; }
+  .data input{ -webkit-appearance:none; appearance:none; width:3.4em; font:inherit; color:inherit; text-align:center; background:var(--pen-soft); border:0; border-bottom:2px solid var(--pen); border-radius:4px 4px 0 0; padding:4px 6px; }
+  /* Safari graut gesperrte Eingabefelder sonst aus, dann wäre grün/rot nach dem Prüfen kaum zu sehen */
+  .data input:disabled{ opacity:1; -webkit-text-fill-color:currentColor; }
   .data tr.mean.is-ok input{ color:var(--ok); background:var(--ok-bg); border-bottom-color:var(--ok); }
   .data tr.mean.is-bad input{ color:var(--bad); background:var(--bad-bg); border-bottom-color:var(--bad); text-decoration:line-through; }
   .num-fix{ margin:0; color:var(--ok); font-weight:700; }
@@ -216,6 +234,9 @@
   @keyframes rise{ from{ opacity:0; transform:translateY(6px); } to{ opacity:1; transform:none; } }
 
   .actions{ display:flex; flex-direction:column; gap:10px; padding-top:16px; border-top:1px solid var(--line); }
+  /* Bei den Fragen bleibt die Leiste mit Prüfen/Weiter am unteren Bildschirmrand stehen, auf dem Handy muss man dafür nicht scrollen */
+  .actions.dock{ position:-webkit-sticky; position:sticky; bottom:0; z-index:1; margin-inline:calc(-1 * var(--pad)); padding:14px var(--pad) calc(14px + env(safe-area-inset-bottom, 0px)); background:var(--surface); }
+  .ico-arr{ width:20px; height:20px; vertical-align:-4px; fill:none; stroke:currentColor; stroke-width:2.4; stroke-linecap:round; stroke-linejoin:round; }
   .btns{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
   .spacer{ flex:1; }
   .btn:disabled{ opacity:.4; cursor:not-allowed; }
@@ -251,18 +272,43 @@
   .miss-a b{ color:var(--ok); }
   .perfect{ margin:0; font-weight:700; color:var(--ok); }
 
+  /* Rückmeldung beim Antippen. iOS zeigt :active nur, weil das Skript auf touchstart hört. */
+  .opt, .box, .qchip, .btn, .pill{ transition:border-color .15s, background-color .15s, transform .1s; }
+  .opt:active:not(:disabled), .box:active:not(:disabled), .btn:active:not(:disabled), .qchip:active, .pill:active{ transform:scale(.97); }
+
   @media (max-width:560px){
-    .grp-lbl .lg{ display:none; }
-    .grp-lbl .sm{ display:inline; }
+    .lg{ display:none; }
+    .sm{ display:inline; }
+    .wrap{ padding-block:16px 28px; gap:16px; }
+    .brand svg{ width:38px; height:38px; }
+    .score b{ font-size:1.45rem; }
+    .score span{ font-size:.82rem; }
+    /* Dunkelmodus nur als Mond-Symbol, die Beschriftung bleibt für Screenreader erhalten */
+    #theme{ padding-inline:11px; }
+    #theme .t-lbl{ position:absolute; width:1px; height:1px; margin:-1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
     .nav{ gap:10px 14px; }
     .spacer{ display:none; }
-    .btns .btn{ flex:1 1 0; }
-    .btns .btn.primary{ flex-basis:100%; order:-1; }
+    /* Fragen: Zurück (nur Pfeil), Überspringen und Prüfen in einer Zeile, Prüfen am größten und rechts beim Daumen */
+    .actions.dock{ gap:8px; padding-block:10px calc(10px + env(safe-area-inset-bottom, 0px)); }
+    .dock .hint{ font-size:.86rem; line-height:1.3; }
+    .dock .btns{ gap:8px; }
+    .dock .btn{ flex:0 0 auto; padding-inline:14px; }
+    .dock .btn.primary{ flex:1 1 auto; }
+    /* Auswertung: Neustart oben über die ganze Breite, darunter die übrigen Knöpfe */
+    .res-actions .btn{ flex:1 1 0; }
+    .res-actions .btn.primary{ flex-basis:100%; order:-1; }
     .mx th, .mx td{ padding-inline:4px; }
-    .mx td{ width:52px; }
-    .box{ width:38px; height:38px; font-size:1.9rem; }
+    .mx td{ width:56px; }
+    .box{ width:40px; height:40px; font-size:1.9rem; }
     .rs{ grid-template-columns:minmax(0,1fr) 3.2em; }
     .rs-bar{ grid-column:1 / -1; grid-row:2; }
+  }
+  /* Finger statt Maus: größere Tippflächen */
+  @media (pointer: coarse){
+    .pill{ min-height:40px; }
+    .qchip{ min-width:40px; height:40px; }
+    .box{ width:44px; height:44px; }
+    .data input{ min-height:44px; }
   }
   @media (prefers-reduced-motion: reduce){
     *, *::before, *::after{ animation:none !important; transition:none !important; }
@@ -286,7 +332,10 @@
       </div>
     </div>
     <div class="top-r">
-      <button type="button" class="cb-toggle" id="cb" aria-pressed="false"><span class="sw" aria-hidden="true"><i></i><i></i></span>Farbenblind-Modus</button>
+      <div class="prefs">
+        <button type="button" class="pill" id="cb" aria-pressed="false"><span class="sw" aria-hidden="true"><i></i><i></i></span><span class="lg">Farbenblind-Modus</span><span class="sm">Farbenblind</span></button>
+        <button type="button" class="pill" id="theme" aria-pressed="false"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg><span class="t-lbl">Dunkelmodus</span></button>
+      </div>
       <div class="score" id="score" aria-live="polite"></div>
     </div>
   </header>
@@ -298,7 +347,7 @@
 
 <script>
 (() => {
-  const VERSION = 4;
+  const VERSION = 5;
 
   const STATIONS = [
     { id: 1, label: 'Versuch 1', short: 'V1', title: 'Welche Stoffe sind magnetisch?', art: 'v1' },
@@ -314,17 +363,12 @@
       q: 'Du hältst den Stabmagneten an diese Gegenstände. Welche werden angezogen?',
       sub: 'Kreuze in jeder Zeile an, so wie du es auf dem Arbeitsblatt gemacht hast.',
       rowHead: 'Gegenstand', cols: ['ja', 'nein'],
-      rows: [['Eisennagel', 0], ['Büroklammer', 0], ['Aluminiumfolie', 1], ['Kupferdraht', 1], ['Holzspieß', 1], ['5-Cent-Münze', 0], ['10/20/50-Cent-Münze', 1], ['Geodreieck/Lineal', 1]],
-      explain: 'Nagel und Büroklammer bestehen aus Eisen. Spannend sind die Münzen: Die <b>5-Cent-Münze</b> hat einen Kern aus Eisen, der nur mit Kupfer überzogen ist. Die <b>10-, 20- und 50-Cent-Münzen</b> bestehen dagegen aus einer Mischung aus Kupfer, Aluminium, Zink und Zinn, die nicht angezogen wird. Aluminium und Kupfer sind zwar Metalle, werden aber nicht angezogen. Holz und Kunststoff werden sowieso nicht angezogen.' },
+      rows: [['Eisennagel', 0], ['Aluminiumfolie', 1], ['Kupferdraht', 1], ['5-Cent-Münze', 0], ['10/20/50-Cent-Münze', 1]],
+      explain: 'Der Nagel besteht aus Eisen. Spannend sind die Münzen: Die <b>5-Cent-Münze</b> hat einen Kern aus Eisen, der nur mit Kupfer überzogen ist. Die <b>10-, 20- und 50-Cent-Münzen</b> bestehen dagegen aus einer Mischung aus Kupfer, Aluminium, Zink und Zinn, die nicht angezogen wird. Aluminium und Kupfer sind zwar Metalle, werden aber nicht angezogen. Gegenstände aus Holz oder Kunststoff wie Holzspieß und Geodreieck werden sowieso nicht angezogen.' },
     { st: 1, type: 'mc',
       q: 'Tim sagt: „Ein Magnet zieht alle Metalle an.“ Hat er recht?',
       opts: ['Nein, weil auch Aluminium und Kupfer Metalle sind, die nicht angezogen werden.', 'Ja, weil alles angezogen wird, was aus Metall ist.', 'Ja, aber nur, wenn das Metall glänzt.', 'Nein, weil Magnete überhaupt keine Metalle anziehen.'],
       explain: 'Ein Magnet zieht nur Gegenstände aus <b>Eisen, Nickel oder Cobalt</b> an. Viele andere Metalle wie Aluminium, Kupfer, Gold oder Silber bleiben einfach liegen.' },
-    { st: 1, type: 'multi',
-      q: 'Du findest ein silbern glänzendes Metallstück. Der Magnet zieht es nicht an. Woraus könnte es bestehen?',
-      sub: 'Mehrere Antworten können richtig sein.',
-      opts: ['Aluminium', 'Silber', 'Eisen', 'Nickel'], a: [0, 1],
-      explain: 'Eisen und Nickel würden vom Magneten angezogen. <b>Aluminium</b> und <b>Silber</b> glänzen zwar auch silbern, sind aber nicht magnetisierbar.' },
     { st: 1, type: 'mc',
       q: 'Stoffe wie Eisen, Nickel und Cobalt nennt man magnetisierbar. Welcher Fachbegriff wird dafür auch verwendet?',
       opts: ['ferromagnetisch', 'elektromagnetisch', 'metallisch', 'magnetisiert'],
@@ -336,23 +380,11 @@
       rowHead: 'Gegenüberliegende Pole', cols: ['ziehen an', 'stoßen ab'],
       rows: [['Nordpol und Nordpol', 1], ['Nordpol und Südpol', 0], ['Südpol und Südpol', 1]],
       explain: '<b>Gleiche Pole stoßen sich ab, ungleiche Pole ziehen sich an.</b> Nord und Nord oder Süd und Süd schieben sich weg, Nord und Süd schnappen zusammen.' },
-    { st: 2, type: 'mc',
-      q: 'Warum liegt der Magnet in Versuch 2 auf mindestens drei Holzspießen?',
-      opts: ['Damit er leicht rollen kann und man sofort sieht, ob er angezogen oder weggeschoben wird.', 'Weil Holz magnetisch ist und den Magneten festhält.', 'Damit der Magnet nicht zerbricht.', 'Damit der Magnet stärker wird.'],
-      explain: 'Direkt auf dem Tisch würde die Reibung den Magneten festhalten. Auf den Holzspießen <b>rollt</b> er schon, wenn nur eine kleine Kraft auf ihn wirkt. Holz selbst ist übrigens nicht magnetisch, wie du in Versuch 1 gesehen hast.' },
     { st: 2, type: 'mc', art: 'unknown',
       q: 'Bei einem Magneten ist die Farbe abgeblättert. Als du ein Ende an den Nordpol eines anderen Magneten hältst, wird es abgestoßen. Welcher Pol ist das?',
       opts: ['Ein Nordpol', 'Ein Südpol', 'Das kann man so nicht herausfinden.', 'Ein Pluspol'],
       explain: 'Weil sich nur gleiche Pole abstoßen, ist das unbekannte Ende ein <b>Nordpol</b>. Pluspol und Minuspol gibt es bei Batterien, nicht bei Magneten. Anziehung wäre übrigens kein sicherer Beweis, weil ein Stück Eisen von beiden Polen angezogen wird.' },
 
-    { st: 3, type: 'mc',
-      q: 'Was misst du in Versuch 3 mit dem Lineal?',
-      opts: ['Den Abstand d, ab dem sich die Büroklammer zu bewegen beginnt', 'Wie viele Büroklammern der Magnet festhalten kann', 'Wie lang der Magnet ist', 'Wie schnell die Büroklammer über das Lineal rutscht'],
-      explain: 'Du schiebst den Magneten langsam heran. Sobald die Büroklammer losrutscht, liest du den Abstand d ab, der die <b>Reichweite</b> des Magneten angibt.' },
-    { st: 3, type: 'mc',
-      q: 'Wozu legt ihr in Versuch 3 ein Karopapier unter Lineal, Büroklammer und Magnet?',
-      opts: ['Weil man an den Karolinien schon kleine Bewegungen der Büroklammer erkennt.', 'Damit der Tisch nicht zerkratzt wird.', 'Weil Papier die Magnetkraft verstärkt.', 'Damit man die Messwerte gleich darauf notieren kann.'],
-      explain: 'Weil Büroklammer und Magnet genau an einer Karolinie ausgerichtet sind, erkennt man an den Linien sofort, wenn sich die Klammer auch nur ein kleines Stück <b>bewegt</b>. So könnt ihr den Abstand d genauer ablesen.' },
     { st: 3, type: 'mc',
       q: 'Die Büroklammer setzt sich in Bewegung, obwohl der Magnet sie noch gar nicht berührt. Was zeigt das?',
       opts: ['Ein Magnet wirkt auch über einen Abstand, ohne dass er etwas berühren muss.', 'Jemand hat an den Tisch gestoßen.', 'Der Magnet erzeugt einen Luftzug, der die Klammer schiebt.', 'Das Lineal ist selbst ein Magnet.'],
@@ -363,19 +395,7 @@
       table: [['Messung 1', '3,5'], ['Messung 2', '4,0'], ['Messung 3', '3,9']],
       answer: 3.8, unit: 'cm',
       explain: '(3,5 + 4,0 + 3,9) : 3 = 11,4 : 3 = <b>3,8 cm</b>. Die Reichweite dieses Magneten beträgt also etwa 3,8 cm.' },
-    { st: 3, type: 'mc',
-      q: 'Warum führt ihr die Messung dreimal durch?',
-      opts: ['Weil einzelne Messungen ungenau sein können, sodass mehrere Messungen ein zuverlässigeres Ergebnis liefern.', 'Damit jedes Gruppenmitglied einmal messen darf.', 'Weil der Magnet mit jeder Messung stärker wird.', 'Weil der Magnet beim ersten Mal noch nicht richtig wirkt.'],
-      explain: 'Man schiebt nie ganz gleich schnell und liest nicht immer ganz genau ab. Aus mehreren Messungen bildet man den <b>Mittelwert</b>, der verlässlicher ist als eine einzelne Messung.' },
 
-    { st: 4, type: 'mc',
-      q: 'Welche Pole müssen sich in Versuch 4 gegenüberliegen, damit der Magnet auf den Holzspießen wegrollt?',
-      opts: ['Zwei gleiche Pole, zum Beispiel Südpol und Südpol', 'Ein Nordpol und ein Südpol', 'Egal, weil sich zwei Magnete immer abstoßen.', 'Die Mitten der beiden Magnete'],
-      explain: 'Nur <b>gleiche Pole</b> stoßen sich ab. Deshalb schiebst du den zweiten Magneten mit dem gleichen Pol voran. Mit Nord- und Südpol würden die Magnete zusammenschnappen.' },
-    { st: 4, type: 'mc',
-      q: 'Wann liest du in Versuch 4 den Abstand d ab?',
-      opts: ['Sobald der Magnet auf den Holzspießen zu rollen beginnt', 'Wenn sich die beiden Magnete berühren', 'Wenn der Magnet auf den Holzspießen wieder liegen bleibt', 'Nachdem du den zweiten Magneten losgelassen hast'],
-      explain: 'Der Abstand d zeigt, ab welcher Entfernung die Abstoßung stark genug ist, um den Magneten zu bewegen. Deshalb liest du ab, <b>sobald er zu rollen beginnt</b>. Das Karopapier hilft dir, auch kleine Bewegungen zu erkennen.' },
     { st: 4, type: 'mc',
       q: 'Lenas Gruppe hat in Versuch 4 dreimal gemessen. Warum ist es sinnvoll, mehrmals zu messen?',
       table: [['Messung 1', '7,5'], ['Messung 2', '3,0'], ['Messung 3', '3,2']],
@@ -396,10 +416,6 @@
       rowHead: 'Nagel', cols: ['ja', 'nein'],
       rows: [['vor dem Bestreichen', 1], ['nach dem Bestreichen', 0], ['nach dem Fallenlassen', 1]],
       explain: 'Vorher ist der Nagel kein Magnet und hält <b>keine</b> Büroklammer. Nach dem Bestreichen ist er selbst zum Magneten geworden und hält sie. Nach dem Fallenlassen ist er wieder <b>entmagnetisiert</b>, sodass die Büroklammer abfällt. Falls euer Nagel sie danach noch gehalten hat, ist er durch das Fallenlassen nur schwächer geworden.' },
-    { st: 5, type: 'mc',
-      q: 'Warum hält der Nagel nach dem Fallenlassen keine Büroklammer mehr?',
-      opts: ['Die Erschütterungen haben ihn wieder entmagnetisiert.', 'Beim Aufprall sind Eisenteile abgebrochen.', 'Der Tisch hat die Magnetkraft aufgesaugt.', 'Der Nagel hat sich beim Fallen in einen Südpol verwandelt.'],
-      explain: 'Man kann sich vorstellen, dass im Eisen ganz viele winzige Magnete stecken (Elementarmagnete). Beim Bestreichen richten sie sich alle gleich aus. Durch Erschütterungen geraten sie wieder durcheinander, sodass der Nagel <b>entmagnetisiert</b> wird.' },
   ];
 
   QUESTIONS.forEach(q => { if (q.type === 'mc' && q.a == null) q.a = 0; });
@@ -446,18 +462,15 @@
     return `<polygon class="foil" points="${pts.map(([x, y]) => `${cx + x},${cy + y}`).join(' ')}"/>`;
   };
   const wire = (x, y) => `<path class="wire" d="M${x} ${y}q4 -12 8 0t8 0t8 0t8 0"/>`;
-  const stick = (x1, x2, y) => `<line class="stick" x1="${x1}" y1="${y}" x2="${x2}" y2="${y}"/><path class="stick-tip" d="M${x2} ${y - 2}L${x2 + 8} ${y}L${x2} ${y + 2}Z"/>`;
-  const setsquare = (cx, by) => `<path class="plastic" d="M${cx - 16} ${by}H${cx + 16}L${cx} ${by - 16}Z"/>`;
 
   const ART = {
     // Draufsicht: Der Magnet wird nacheinander an die Gegenstände aus der Tabelle gehalten.
     v1: () => svg(360, 102,
       magnet(12, 10, 96, 24, 'N', 'S') + arrow(118, 22, 348, 'arr dashed') +
-      nail(6, 68, 18) + clip(50, 64) + coin(112, 72, 10, 'coin5', '5') + coin(156, 72, 11, 'coin10', '10') +
-      foil(200, 72) + wire(230, 76) + stick(270, 304, 72) + setsquare(332, 80) +
-      [['Nagel', 24], ['Klammer', 68], ['5 ct', 112], ['10 ct', 156], ['Alufolie', 200], ['Kupfer', 246], ['Holzspieß', 287], ['Geodreieck', 335]]
+      nail(23, 68, 18) + foil(112, 72) + wire(164, 76) + coin(248, 72, 10, 'coin5', '5') + coin(316, 72, 11, 'coin10', '10') +
+      [['Nagel', 44], ['Alufolie', 112], ['Kupfer', 180], ['5 ct', 248], ['10 ct', 316]]
         .map(([t, x]) => `<text class="lbl" x="${x}" y="98">${t}</text>`).join(''),
-      'Ein Stabmagnet wird nacheinander an Nagel, Büroklammer, Münzen, Alufolie, Kupferdraht, Holzspieß und Geodreieck gehalten', 'art wide'),
+      'Ein Stabmagnet wird nacheinander an Nagel, Alufolie, Kupferdraht und Münzen gehalten', 'art wide'),
     // Draufsicht: Magnet auf Holzspießen, ein zweiter Magnet wird angenähert.
     v2: () => svg(340, 78,
       skewers([44, 78, 112], 16, 64) + magnet(22, 27, 112, 26, 'N', 'S') + `<text class="hand" x="170" y="47">?</text>` + magnet(206, 27, 112, 26, 'N', 'S'),
@@ -553,6 +566,25 @@
   setCB(cbStored);
   cbBtn.addEventListener('click', () => setCB(cbBtn.getAttribute('aria-pressed') !== 'true'));
 
+  // Dunkelmodus: folgt zuerst dem Gerät bzw. der Umgebung. Eine eigene Wahl wird pro Gerät gemerkt und steht
+  // in data-mode, damit sie nicht mit dem data-theme kollidiert, das die Umgebung setzen kann.
+  const root = document.documentElement, themeBtn = $('#theme');
+  const darkMQ = window.matchMedia('(prefers-color-scheme: dark)');
+  const isDark = () => root.dataset.mode ? root.dataset.mode === 'dark'
+    : root.dataset.theme ? root.dataset.theme === 'dark' : darkMQ.matches;
+  const syncTheme = () => themeBtn.setAttribute('aria-pressed', String(isDark()));
+  themeBtn.addEventListener('click', () => {
+    root.dataset.mode = isDark() ? 'light' : 'dark';
+    try { localStorage.setItem('magnetQuiz.mode', root.dataset.mode); } catch (e) { /* Speicher gesperrt */ }
+    syncTheme();
+  });
+  if (darkMQ.addEventListener) darkMQ.addEventListener('change', syncTheme); else darkMQ.addListener(syncTheme);
+  new MutationObserver(syncTheme).observe(root, { attributes: true, attributeFilter: ['data-theme'] });
+  syncTheme();
+
+  // Ohne einen touchstart-Listener zeigt Safari auf iPhone/iPad keine :active-Rückmeldung beim Antippen
+  document.addEventListener('touchstart', () => {}, { passive: true });
+
   const STATE_WORD = { ok: 'richtig', part: 'teilweise richtig', bad: 'falsch' };
   const STATE_MARK = { ok: '✓', part: '~', bad: '✗' };
   function resState(qi) {
@@ -624,7 +656,7 @@
   function numberHTML(q, qi, res) {
     const state = res ? (res.score ? ' is-ok' : ' is-bad') : '';
     const row = `<tr class="mean${state}"><th scope="row"><label for="num">Mittelwert</label></th>
-      <td class="val"><input id="num" data-fk="num" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" value="${esc(S.resp[qi] || '')}"${res ? ' disabled' : ''}></td></tr>`;
+      <td class="val"><input id="num" data-fk="num" type="text" inputmode="decimal" enterkeyhint="done" autocomplete="off" spellcheck="false" value="${esc(S.resp[qi] || '')}"${res ? ' disabled' : ''}></td></tr>`;
     const fix = res && !res.score ? `<p class="num-fix">Richtig wäre ${fmtNum(q.answer)} ${q.unit}.</p>` : '';
     return dataTable(q, row) + fix;
   }
@@ -657,9 +689,9 @@
       <div class="qhead"><h2 class="prompt">${q.q}</h2>${q.sub ? `<p class="sub">${q.sub}</p>` : ''}</div>
       ${body}
       ${res ? feedbackHTML(q, res) : ''}
-      <div class="actions"><span class="hint" id="hint">${hint}</span>
+      <div class="actions dock"><span class="hint" id="hint">${hint}</span>
         <div class="btns">
-          <button type="button" class="btn ghost" data-act="prev" data-fk="prev"${S.pos === 0 ? ' disabled' : ''}>Zurück</button>
+          <button type="button" class="btn ghost" data-act="prev" data-fk="prev" aria-label="Zurück"${S.pos === 0 ? ' disabled' : ''}><span class="lg">Zurück</span><svg class="sm ico-arr" viewBox="0 0 20 20" aria-hidden="true"><path d="M12 4.5 6.5 10l5.5 5.5"/></svg></button>
           <span class="spacer"></span>
           ${res ? '' : `<button type="button" class="btn ghost" data-act="next" data-fk="next">Überspringen</button>`}
           <button type="button" class="btn primary" id="primary" data-fk="primary"${disabled ? ' disabled' : ''}>${label}</button>
@@ -709,7 +741,7 @@
       ${openHTML}
       <div class="rs-list">${rows}</div>
       ${missHTML}
-      <div class="actions"><div class="btns">
+      <div class="actions res-actions"><div class="btns">
         ${open.length ? `<button type="button" class="btn ghost" data-act="open" data-fk="open">Offene Fragen beantworten (${open.length})</button>` : ''}
         ${miss.length ? `<button type="button" class="btn ghost" data-act="retry" data-fk="retry">Fehler üben (${miss.length})</button>` : ''}
         <span class="spacer"></span>
@@ -735,9 +767,14 @@
     const top = sheet.getBoundingClientRect().top;
     if (top < 0) window.scrollBy({ top: top - 12, behavior });
   }
-  function toActions() {
-    const a = $('.actions', sheet);
-    if (a) a.scrollIntoView({ block: 'nearest', behavior });
+  // Nach dem Prüfen die Rückmeldung oberhalb der festen Knopfleiste zeigen; ihr Anfang hat Vorrang
+  function toFeedback() {
+    const fb = $('.fb', sheet), dock = $('.dock', sheet);
+    if (!fb) return;
+    const r = fb.getBoundingClientRect();
+    const limit = window.innerHeight - (dock ? dock.offsetHeight : 0) - 12;
+    const dy = Math.min(r.bottom - limit, r.top - 12);
+    if (dy > 0) window.scrollBy({ top: dy, behavior });
   }
 
   /* ---------- Ablauf ---------- */
@@ -748,7 +785,7 @@
       S.res[qi] = grade(q, S.resp[qi]);
       pendingFocus = 'primary';
       render();
-      toActions();
+      toFeedback();
     } else next();
   }
 
